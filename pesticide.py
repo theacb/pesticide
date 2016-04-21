@@ -1,9 +1,10 @@
-import maya.standalone
+import maya.standalone as mcs
 import logging
 import time
 import getpass
 import sys
 import os
+import pesticideClasses as pc
 
 
 def get_log_file(osx_path, win_path):
@@ -52,10 +53,39 @@ def setup_log():
 
     return lg
 
-# Starts interpreter
 
-maya.standalone.initialize(name='python')
+def get_ma_files(directory):
+    flg = logging.getLogger("pesticide.get_ma_files")
 
-lg = setup_log()
+    flg.info("Looking for Maya Ascii Files in {}".format(directory))
 
-maya.standalone.uninitialize()
+    found_files = []
+
+    for root, dirs, files in os.walk(directory, topdown=False):
+        for name in dirs:
+            flg.debug("Directory: {}".format(os.path.join(root, name)))
+        for name in files:
+            if name.endswith('.ma'):
+                ma_file = pc.FileName(name, root)
+                flg.debug("File: {}".format(ma_file.get_name()))
+                found_files.append(ma_file)
+
+    return found_files
+
+
+def main():
+    flg = setup_log()
+
+    search_dir = '//awexpress.westphal.drexel.edu/digm_anfx/SPRJ_cgbirds/_production/assets/environment'
+
+    # Starts interpreter
+    mcs.initialize(name='python')
+    flg.info("Maya Initialized")
+
+    files = get_ma_files(os.path.normpath(search_dir))
+
+    mcs.uninitialize()
+    flg.info("Maya uninitialized")
+
+if __name__ == "__main__":
+    main()
