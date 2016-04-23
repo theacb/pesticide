@@ -6,6 +6,15 @@ class FileName:
         self.name = name
         self.directory = directory
 
+        self.bad_nodes = []
+        self.student_file_status = False
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return os.path.join(self.directory, self.name)
+
     def get_name(self):
         return self.name
 
@@ -15,8 +24,14 @@ class FileName:
     def get_path(self):
         return os.path.join(self.directory, self.name)
 
-    def __str__(self):
-        return self.name
+    def get_bad_nodes(self):
+        return self.bad_nodes
 
-    def __repr__(self):
-        return os.path.join(self.directory, self.name)
+    def get_student_file_status(self):
+        return self.student_file_status
+
+    def append_bad_node(self, node):
+        self.bad_nodes.append(node)
+
+    def set_student_file_status(self, b):
+        self.student_file_status = b
