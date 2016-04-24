@@ -81,9 +81,13 @@ def search_file(f, bad_types):
 
     flg.info("Looking in file: {}".format(f.get_name()))
 
-    mc.file(f.get_path(),
-            open=True
-            )
+    try:
+        mc.file(f.get_path(),
+                open=True
+                )
+    except:
+        flg.error("Some sort of Error here, skipping file")
+        return f
 
     flg.info("Getting Node List")
     nodes = mc.ls(shortNames=True)
@@ -241,7 +245,7 @@ def is_plural(array):
 def array_to_file(results_array, name):
     flg = logging.getLogger("pesticide.array_to_file")
     try:
-        f = open(name, 'w')
+        f = open(name, 'a')
 
         flg.debug("Writing to file: {}".format(name))
         flg.debug(f)
@@ -257,7 +261,11 @@ def array_to_file(results_array, name):
         raise
 
 
-def test_file(name):
+def test_file(name, search_dir):
+
+    start_time = strftime("%H:%M:%S")
+    date = strftime("%m/%d/%y")
+
     flg = logging.getLogger("pesticide.test_file")
     try:
         f = open(name, 'w')
@@ -265,6 +273,12 @@ def test_file(name):
         flg.debug("Creating file: {}".format(name))
         flg.debug(f)
 
+        f.write("{0}\r{1}\r{2}\r{3}\r{4}".format("Searched: {}".format(search_dir),
+                                                 '\r',
+                                                 "Started at {} on {}".format(start_time, date),
+                                                 "User: {}".format(getuser()),
+                                                 '\r'
+                                                 ))
         f.close()
         flg.debug("Done")
     except IOError as e:
@@ -294,19 +308,39 @@ def gen_file_name():
     return os.path.join(path, file_name)
 
 
-def main():
-    start_time = strftime("%H:%M:%S")
-    date = strftime("%m/%d/%y")
+def split_chunks(long_list, size):
+    list_of_lists = []
 
-    flg = setup_log()
+    temp_list = []
+
+    i = 0
+
+    for l in long_list:
+        temp_list.append(l)
+        if i >= size:
+            list_of_lists.append(temp_list)
+            i = 0
+            temp_list = []
+        else:
+            i += 1
+
+    return list_of_lists
+
+
+def main():
+
+    flg = setup_log("logging.DEBUG")
 
     search_dir = '//awexpress.westphal.drexel.edu/digm_anfx/SPRJ_cgbirds'
 
+    flg.debug("Initializing Maya")
     # Starts interpreter
     mcs.initialize(name='python')
     flg.info("Maya Initialized")
 
     output_file_name = gen_file_name()
+
+    test_file(output_file_name, search_dir)
 
     files = get_ma_files(os.path.normpath(search_dir))
 
@@ -316,27 +350,34 @@ def main():
     bad_types = bad_types_list()
 
     flg.info("Searching Files")
+
     i = 0
-    for f in files:
-        print("{} out of {} files".format(i, len(files)))
-        results.append(search_file(f, bad_types))
-        i += 1
+    j = 1
 
-    flg.info("Compiling results")
-    comp_res = compile_results(results,
-                               "Searched: {}".format(search_dir),
-                               '\r',
-                               "Started at {} on {}".format(start_time, date),
-                               "User: {}".format(getuser()),
-                               '\r',
-                               '*' * 150,
-                               '\r'
-                               )
+    chunked = split_chunks(files, 250)
 
-    array_to_file(comp_res, output_file_name)
+    for c in chunked:
+        flg.debug("Searching Chunk {} out of {}".format(j, len(chunked)))
+        for f in c:
+            print("{} out of {} files".format(i, len(files)))
+            results.append(search_file(f, bad_types))
+            i += 1
+
+        flg.debug("Compiling results for chunk {}".format(j))
+        comp_res = compile_results(results,
+                                   '\r',
+                                   '*' * 150,
+                                   "Chunk {} out of {}".format(j, len(chunked)),
+                                   '*' * 150,
+                                   '\r'
+                                   )
+
+        array_to_file(comp_res, output_file_name)
+        j += 1
 
     mcs.uninitialize()
     flg.info("Maya uninitialized")
 
 if __name__ == "__main__":
     main()
+
