@@ -7,7 +7,7 @@ import os
 from time import strftime
 from getpass import getuser
 
-import pesticideclasses as pc
+import pesticide_classes as pc
 
 
 def get_log_file(osx_path, win_path):
